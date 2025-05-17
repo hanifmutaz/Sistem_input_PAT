@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Admin - Sistem Insentif PAT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="img/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <header id="header" class="header">
+        <div class="header-left">
+            <img src="img/logo.jpg" alt="Logo Sekolah" class="header-logo">
+            <h1>Admin Panel - Sistem Insentif PAT</h1>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <span id="userName">Administrator</span>
+                <span id="userRole">Admin</span>
+            </div>
+            <button id="logoutBtn" class="btn-logout">Logout</button>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="admin-view-container">
+            <div class="tabs-container">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="dataTab">Data Masukan</button>
+                    <button class="tab-btn" data-tab="summaryTab">Ringkasan</button>
+                    <button class="tab-btn" data-tab="settingsTab">Pengaturan</button>
+                </div>
+                <div class="tab-content">
+                    <div id="dataTab" class="tab-pane active">
+                        <div class="admin-actions">
+                            <h2>Data Insentif PAT</h2>
+                            <div class="action-buttons">
+                                <button id="exportBtn" class="btn-secondary">Export CSV</button>
+                                <button id="deleteAllBtn" class="btn-danger">Hapus Semua Data</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="dataTable" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Tanggal</th>
+                                        <th>Guru</th>
+                                        <th>Kategori</th>
+                                        <th>Subkategori</th>
+                                        <th>Nilai</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center">Memuat data...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="summaryTab" class="tab-pane">
+                        <h2>Ringkasan Insentif PAT per Guru</h2>
+                        <div class="table-responsive">
+                            <table id="summaryTable" class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Guru</th>
+                                        <th>Pembuatan Soal</th>
+                                        <th>Koreksi</th>
+                                        <th>Raport</th>
+                                        <th>Lain-lain</th>
+                                        <th>Total Nilai</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="summaryTableBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center">Memuat data...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="settingsTab" class="tab-pane">
+                        <h2>Pengaturan Sistem</h2>
+                        <div class="settings-container">
+                            <div class="settings-section">
+                                <h3>Pengguna Admin</h3>
+                                <form id="adminPasswordForm" class="settings-form">
+                                    <div class="form-group">
+                                        <label for="currentPassword">Password Saat Ini:</label>
+                                        <input type="password" id="currentPassword" name="currentPassword" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="newPassword">Password Baru:</label>
+                                        <input type="password" id="newPassword" name="newPassword" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="confirmPassword">Konfirmasi Password:</label>
+                                        <input type="password" id="confirmPassword" name="confirmPassword" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <button type="submit" class="btn-primary">
+                                            <span class="btn-text">Ubah Password</span>
+                                            <span class="btn-loader"></span>
+                                        </button>
+                                    </div>
+                                </form>
+                                <div id="passwordError" class="message error" role="alert"></div>
+                                <div id="passwordSuccess" class="message success" role="alert"></div>
+                            </div>
+                            
+                            <div class="settings-section">
+                                <h3>Pengaturan Nilai Insentif</h3>
+                                <form id="insentifSettingsForm" class="settings-form">
+                                    <div class="form-group">
+                                        <label for="membuatSoalNilai">Nilai Membuat Soal:</label>
+                                        <input type="number" id="membuatSoalNilai" name="membuatSoalNilai" min="0" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editSoalNilai">Nilai Edit Soal:</label>
+                                        <input type="number" id="editSoalNilai" name="editSoalNilai" min="0" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="koreksiDiniyahNilai">Nilai Koreksi Diniyah:</label>
+                                        <input type="number" id="koreksiDiniyahNilai" name="koreksiDiniyahNilai" min="0" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="koreksiLokalNilai">Nilai Koreksi Lokal:</label>
+                                        <input type="number" id="koreksiLokalNilai" name="koreksiLokalNilai" min="0" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="koreksiDiknasNilai">Nilai Koreksi Diknas:</label>
+                                        <input type="number" id="koreksiDiknasNilai" name="koreksiDiknasNilai" min="0" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="raportAlQuranNilai">Nilai Raport Al-Quran:</label>
+                                        <input type="number" id="raportAlQuranNilai" name="raportAlQuranNilai" min="0" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="raportP5Nilai">Nilai Raport P5:</label>
+                                        <input type="number" id="raportP5Nilai" name="raportP5Nilai" min="0" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="menulisRaportNilai">Nilai Menulis Raport:</label>
+                                        <input type="number" id="menulisRaportNilai" name="menulisRaportNilai" min="0" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="mengawasUjianNilai">Nilai Mengawas Ujian:</label>
+                                        <input type="number" id="mengawasUjianNilai" name="mengawasUjianNilai" min="0" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <button type="submit" class="btn-primary">
+                                            <span class="btn-text">Simpan Pengaturan</span>
+                                            <span class="btn-loader"></span>
+                                        </button>
+                                    </div>
+                                </form>
+                                <div id="settingsError" class="message error" role="alert"></div>
+                                <div id="settingsSuccess" class="message success" role="alert"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="confirmDeleteModal" class="modal">
+        <div class="modal-content">
+            <h3>Konfirmasi Hapus</h3>
+            <p>Apakah Anda yakin ingin menghapus semua data? Tindakan ini tidak dapat dibatalkan.</p>
+            <div class="modal-actions">
+                <button id="cancelDeleteBtn" class="btn-secondary">Batal</button>
+                <button id="confirmDeleteBtn" class="btn-danger">Hapus Semua</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 Sistem Insentif PAT</p>
+    </footer>
+
+    <script src="admin.js"></script>
+</body>
+</html>
