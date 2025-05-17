@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Login - Sistem Insentif PAT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="img/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-container">
+            <img src="img/logo.jpg" alt="Logo Sekolah" class="school-logo">
+        </div>
+
+        <h2 id="login-sistem-insentif-pat" class="text-center">Login Sistem Insentif PAT</h2>
+
+        <form id="loginForm" class="login-form">
+            <div class="form-group">
+                <label for="namaGuru">Nama Guru:</label>
+                <input type="text" id="namaGuru" name="namaGuru" placeholder="Masukkan nama guru" required autocomplete="username">
+            </div>
+
+            <div class="form-group password-container">
+                <label for="password">Password:</label>
+                <div class="password-input-container">
+                    <input type="password" id="password" name="password" placeholder="Masukkan password" required autocomplete="current-password">
+                    <span id="togglePassword" class="toggle-password">👁️</span>
+                </div>
+                <small class="password-hint">Default: guru123 (untuk guru/wali), lupa12345 (untuk admin)</small>
+            </div>
+
+            <div class="form-group">
+                <label for="jabatan">Jabatan:</label>
+                <select id="jabatan" name="jabatan" required>
+                    <option value="">Pilih Jabatan</option>
+                    <option value="guru">Guru Mata Pelajaran</option>
+                    <option value="wali">Guru Wali Kelas</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <button type="submit" class="btn-primary btn-login">
+                    <span class="btn-text">Login</span>
+                    <span class="btn-loader"></span>
+                </button>
+            </div>
+        </form>
+
+        <div id="loginError" class="message error" role="alert"></div>
+        <div id="loginSuccess" class="message success" role="alert"></div>
+        
+        <div class="login-footer">
+            <p>&copy; 2025 Sistem Insentif PAT</p>
+        </div>
+    </div>
+
+    <script src="scripts.js"></script>
+</body>
+</html>
