@@ -70,7 +70,12 @@ function checkSession() {
             action: 'checkSession'
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         // Hilangkan loader pada tombol logout
         document.getElementById('logoutBtn').classList.remove('loading');
@@ -119,7 +124,12 @@ function logout() {
             action: 'logout'
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         // Hilangkan loader pada tombol logout
         document.getElementById('logoutBtn').classList.remove('loading');
@@ -133,6 +143,7 @@ function logout() {
         console.error('Error:', error);
         // Hilangkan loader pada tombol logout
         document.getElementById('logoutBtn').classList.remove('loading');
+        alert('Terjadi kesalahan saat logout. Silakan coba lagi.');
     });
 }
 
@@ -145,16 +156,30 @@ function saveData() {
     // Ambil data dari form
     const formData = {
         action: 'saveData',
-        membuatSoal: document.getElementById('membuatSoal').value,
-        editSoal: document.getElementById('editSoal').value,
-        koreksiDiniyah: document.getElementById('koreksiDiniyah').value,
-        koreksiLokal: document.getElementById('koreksiLokal').value,
-        koreksiDiknas: document.getElementById('koreksiDiknas').value,
-        raportAlQuran: document.getElementById('raportAlQuran').value,
-        raportP5: document.getElementById('raportP5').value,
-        menulisRaport: document.getElementById('menulisRaport').value,
-        mengawasUjian: document.getElementById('mengawasUjian').value
+        membuatSoal: parseInt(document.getElementById('membuatSoal').value) || 0,
+        editSoal: parseInt(document.getElementById('editSoal').value) || 0,
+        koreksiDiniyah: parseInt(document.getElementById('koreksiDiniyah').value) || 0,
+        koreksiLokal: parseInt(document.getElementById('koreksiLokal').value) || 0,
+        koreksiDiknas: parseInt(document.getElementById('koreksiDiknas').value) || 0,
+        raportAlQuran: parseInt(document.getElementById('raportAlQuran').value) || 0,
+        raportP5: parseInt(document.getElementById('raportP5').value) || 0,
+        menulisRaport: parseInt(document.getElementById('menulisRaport').value) || 0,
+        mengawasUjian: parseInt(document.getElementById('mengawasUjian').value) || 0
     };
+    
+    // Validasi data sebelum dikirim
+    const isValid = Object.entries(formData).every(([key, value]) => {
+        if (key !== 'action' && (isNaN(value) || value < 0 || value > 1000)) {
+            showFormMessage('formError', `Nilai ${key} harus berupa angka antara 0-1000`);
+            return false;
+        }
+        return true;
+    });
+    
+    if (!isValid) {
+        submitBtn.classList.remove('loading');
+        return;
+    }
     
     // Kirim data ke server
     fetch('data.php', {
@@ -164,7 +189,12 @@ function saveData() {
         },
         body: JSON.stringify(formData)
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         // Hilangkan loader pada tombol submit
         submitBtn.classList.remove('loading');
@@ -193,6 +223,9 @@ function showFormMessage(elementId, message) {
     element.textContent = message;
     element.style.display = 'block';
     
+    // Scroll ke elemen pesan
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
     // Sembunyikan pesan setelah 5 detik
     setTimeout(() => {
         element.style.display = 'none';
@@ -211,7 +244,12 @@ function loadAllData() {
             action: 'getData'
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Jika berhasil, tampilkan data pada tabel
@@ -240,7 +278,12 @@ function loadSummaryData() {
             action: 'getSummaryData'
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Jika berhasil, tampilkan data pada tabel ringkasan
@@ -314,7 +357,7 @@ function renderSummaryTable(data) {
     data.forEach(item => {
         if (!guruData[item.guru]) {
             guruData[item.guru] = {
-                pembuatanSoal: 0,
+                pembuatan: 0,
                 koreksi: 0,
                 raport: 0,
                 lain: 0
@@ -322,7 +365,15 @@ function renderSummaryTable(data) {
         }
         
         // Tambahkan nilai sesuai kategori
-        guruData[item.guru][item.kategori] += item.total_nilai;
+        if (item.kategori === 'pembuatan') {
+            guruData[item.guru].pembuatan += parseInt(item.total_nilai);
+        } else if (item.kategori === 'koreksi') {
+            guruData[item.guru].koreksi += parseInt(item.total_nilai);
+        } else if (item.kategori === 'raport') {
+            guruData[item.guru].raport += parseInt(item.total_nilai);
+        } else if (item.kategori === 'lain') {
+            guruData[item.guru].lain += parseInt(item.total_nilai);
+        }
     });
     
     // Tampilkan data pada tabel
@@ -338,7 +389,7 @@ function renderSummaryTable(data) {
             <td>${guruData[guru].koreksi}</td>
             <td>${guruData[guru].raport}</td>
             <td>${guruData[guru].lain}</td>
-            <td>${totalNilai}</td>
+            <td><strong>${totalNilai}</strong></td>
         `;
         
         summaryTableBody.appendChild(row);
@@ -360,22 +411,27 @@ function deleteEntry(id) {
                 id: id
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 // Jika berhasil, muat ulang data
                 loadAllData();
                 loadSummaryData();
-                alert(data.message);
+                showFormMessage('formSuccess', data.message);
             } else {
                 // Jika gagal, tampilkan pesan error
-                alert(data.message);
+                showFormMessage('formError', data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
             // Tampilkan pesan error
-            alert('Terjadi kesalahan saat menghapus data. Silakan coba lagi nanti.');
+            showFormMessage('formError', 'Terjadi kesalahan saat menghapus data. Silakan coba lagi nanti.');
         });
     }
 }
@@ -392,22 +448,27 @@ function deleteAllData() {
             action: 'deleteAllData'
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Jika berhasil, muat ulang data
             loadAllData();
             loadSummaryData();
-            alert(data.message);
+            showFormMessage('formSuccess', data.message);
         } else {
             // Jika gagal, tampilkan pesan error
-            alert(data.message);
+            showFormMessage('formError', data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
         // Tampilkan pesan error
-        alert('Terjadi kesalahan saat menghapus semua data. Silakan coba lagi nanti.');
+        showFormMessage('formError', 'Terjadi kesalahan saat menghapus semua data. Silakan coba lagi nanti.');
     });
 }
 
@@ -423,22 +484,37 @@ function exportData() {
             action: 'exportData'
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Jika berhasil, buat file CSV
             const csvContent = convertToCSV(data.data);
-            downloadCSV(csvContent, 'insentif_pat_data.csv');
+            downloadCSV(csvContent, `insentif_pat_data_${getCurrentDate()}.csv`);
         } else {
             // Jika gagal, tampilkan pesan error
-            alert(data.message);
+            showFormMessage('formError', data.message);
         }
     })
     .catch(error => {
         console.error('Error:', error);
         // Tampilkan pesan error
-        alert('Terjadi kesalahan saat mengekspor data. Silakan coba lagi nanti.');
+        showFormMessage('formError', 'Terjadi kesalahan saat mengekspor data. Silakan coba lagi nanti.');
     });
+}
+
+// Fungsi untuk mendapatkan tanggal saat ini dalam format YYYY-MM-DD
+function getCurrentDate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
 }
 
 // Fungsi untuk mengkonversi data ke format CSV
@@ -457,8 +533,11 @@ function convertToCSV(data) {
     data.forEach(row => {
         const values = headers.map(header => {
             const cellValue = row[header] !== null ? row[header] : '';
-            // Escape nilai dengan quotes jika mengandung koma
-            return typeof cellValue === 'string' && cellValue.includes(',') ? `"${cellValue}"` : cellValue;
+            // Escape nilai dengan quotes jika mengandung koma atau quote
+            if (typeof cellValue === 'string' && (cellValue.includes(',') || cellValue.includes('"'))) {
+                return `"${cellValue.replace(/"/g, '""')}"`;
+            }
+            return cellValue;
         });
         csv += values.join(',') + '\n';
     });
@@ -481,6 +560,10 @@ function downloadCSV(csvContent, fileName) {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        // Bebaskan sumber daya URL
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+        }, 100);
     }
 }
 
@@ -511,13 +594,20 @@ function switchTab(tabId) {
 
 // Fungsi untuk mengkapitalisasi huruf pertama
 function capitalizeFirstLetter(string) {
+    if (!string) return '';
     return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
 // Fungsi untuk memformat subkategori
 function formatSubkategori(subkategori) {
+    if (!subkategori) return '';
+    
     // Ubah format subkategori dari camelCase atau snake_case menjadi kalimat normal
-    // Contoh: membuatSoal -> Membuat Soal
-    const formatted = subkategori.replace(/[A-Z]/g, letter => ` ${letter}`);
-    return capitalizeFirstLetter(formatted);
+    let formatted = subkategori
+        // Untuk camelCase
+        .replace(/([A-Z])/g, ' $1')
+        // Untuk snake_case
+        .replace(/_/g, ' ');
+    
+    return capitalizeFirstLetter(formatted.trim());
 }
