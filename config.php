@@ -1,9 +1,9 @@
 <?php
 // Database connection configuration
-$host = "sql213.infinityfree.com";
-$username = "if0_38429506";
-$password = "NvVjwFzC4Y8tB";
-$database = "if0_38429506_pat_insentif";
+$host = "sql205.infinityfree.com";
+$username = "if0_39020775";
+$password = "Aq1MBOT16hxAsf";
+$database = "if0_39020775_pat2025";
 
 // Create connection with database selected
 $conn = new mysqli($host, $username, $password, $database);
