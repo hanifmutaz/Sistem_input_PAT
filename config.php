@@ -1,9 +1,26 @@
 <?php
-// Database connection configuration
-$host = "sql205.infinityfree.com";
-$username = "if0_39020775";
-$password = "Aq1MBOT16hxAsf";
-$database = "if0_39020775_pat2025";
+// Load environment variables from .env file if it exists
+$envFile = __DIR__ . '/.env';
+if (file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || strpos($line, '#') === 0) {
+            continue;
+        }
+        list($key, $value) = array_map('trim', explode('=', $line, 2));
+        if (!getenv($key)) {
+            putenv("{$key}={$value}");
+            $_ENV[$key] = $value;
+        }
+    }
+}
+
+// Database connection configuration from environment variables
+$host = getenv('DB_HOST') ?: 'localhost';
+$username = getenv('DB_USERNAME') ?: 'root';
+$password = getenv('DB_PASSWORD') ?: '';
+$database = getenv('DB_DATABASE') ?: '';
 
 // Create connection with database selected
 $conn = new mysqli($host, $username, $password, $database);
@@ -22,6 +39,7 @@ $sql = "CREATE TABLE IF NOT EXISTS users (
     nama VARCHAR(100) NOT NULL,
     password VARCHAR(255) NOT NULL,
     jabatan VARCHAR(50) NOT NULL,
+    must_change_password TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP NULL,
     PRIMARY KEY (id),
@@ -35,7 +53,7 @@ $sql = "CREATE TABLE IF NOT EXISTS penilaian_data (
     id INT(11) NOT NULL AUTO_INCREMENT,
     timestamp DATETIME NOT NULL,
     guru VARCHAR(100) NOT NULL,
-    kategori VARCHAR(50) NOT NULL, 
+    kategori VARCHAR(50) NOT NULL,
     subkategori VARCHAR(50) NOT NULL,
     nilai INT(11) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -47,42 +65,4 @@ $sql = "CREATE TABLE IF NOT EXISTS penilaian_data (
 if ($conn->query($sql) !== TRUE) {
     die("Error creating penilaian_data table: " . $conn->error);
 }
-
-// Check if admin user exists, if not create one
-$checkAdmin = "SELECT * FROM users WHERE jabatan = 'admin' LIMIT 1";
-$result = $conn->query($checkAdmin);
-if ($result->num_rows == 0) {
-    $hashedPassword = password_hash('lupa12345', PASSWORD_DEFAULT);
-    $insertAdmin = "INSERT INTO users (nama, password, jabatan) 
-                    VALUES ('Administrator', '$hashedPassword', 'admin')";
-    if ($conn->query($insertAdmin) !== TRUE) {
-        die("Error creating admin user: " . $conn->error);
-    }
-}
-
-// Function to create or update default user by jabatan
-function createDefaultUser($conn, $nama, $jabatan, $password) {
-    $checkUser = "SELECT * FROM users WHERE nama = ? AND jabatan = ? LIMIT 1";
-    $stmt = $conn->prepare($checkUser);
-    $stmt->bind_param("ss", $nama, $jabatan);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-    
-    if ($result->num_rows == 0) {
-        // Create new user
-        $insertUser = "INSERT INTO users (nama, password, jabatan) VALUES (?, ?, ?)";
-        $stmt = $conn->prepare($insertUser);
-        $stmt->bind_param("sss", $nama, $hashedPassword, $jabatan);
-        return $stmt->execute();
-    } else {
-        // User exists, no need to update
-        return true;
-    }
-}
-
-// Create default users if needed
-createDefaultUser($conn, "Default Guru", "guru", "guru123");
-createDefaultUser($conn, "Default Wali", "wali", "guru123");
 ?>

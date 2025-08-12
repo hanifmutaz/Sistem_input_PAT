@@ -14,42 +14,48 @@ header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 header("Content-Security-Policy: default-src 'self'");
 
-// Handle login requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $inputData = file_get_contents('php://input');
     $data = json_decode($inputData, true);
-    
+
     if (!isset($data['action'])) {
         echo json_encode(['success' => false, 'message' => 'Action not specified']);
         exit;
     }
-    
+
     // Login process
     if ($data['action'] === 'login') {
         $namaGuru = isset($data['namaGuru']) ? $conn->real_escape_string(sanitizeInput($data['namaGuru'])) : '';
         $password = isset($data['password']) ? $data['password'] : '';
         $jabatan = isset($data['jabatan']) ? $conn->real_escape_string(sanitizeInput($data['jabatan'])) : '';
-        
-        // Validate inputs
+
         if (empty($namaGuru) || empty($password) || empty($jabatan)) {
             echo json_encode(['success' => false, 'message' => 'Semua field harus diisi']);
             exit;
         }
-        
-        // Special case for admin login
+
         if ($jabatan === 'admin') {
             $stmt = $conn->prepare("SELECT * FROM users WHERE jabatan = 'admin' LIMIT 1");
             $stmt->execute();
             $result = $stmt->get_result();
-            
+
             if ($result->num_rows > 0) {
                 $user = $result->fetch_assoc();
                 if (password_verify($password, $user['password'])) {
-                    // Update last login time
+                    if ($user['must_change_password']) {
+                        echo json_encode([
+                            'success' => false,
+                            'requirePasswordChange' => true,
+                            'userId' => $user['id'],
+                            'message' => 'Password harus diganti sebelum login'
+                        ]);
+                        exit;
+                    }
+
                     $updateStmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
                     $updateStmt->bind_param("i", $user['id']);
                     $updateStmt->execute();
-                    
+
                     $_SESSION['user'] = [
                         'id' => $user['id'],
                         'nama' => $user['nama'],
@@ -60,25 +66,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit;
                 }
             }
-            
-            // Admin login failed
+
             echo json_encode(['success' => false, 'message' => 'Username atau password admin salah']);
             exit;
         } else {
-            // Regular user login (guru or wali)
             $stmt = $conn->prepare("SELECT * FROM users WHERE nama = ? AND jabatan = ?");
             $stmt->bind_param("ss", $namaGuru, $jabatan);
             $stmt->execute();
             $result = $stmt->get_result();
-            
+
             if ($result->num_rows > 0) {
                 $user = $result->fetch_assoc();
                 if (password_verify($password, $user['password'])) {
-                    // Update last login time
+                    if ($user['must_change_password']) {
+                        echo json_encode([
+                            'success' => false,
+                            'requirePasswordChange' => true,
+                            'userId' => $user['id'],
+                            'message' => 'Password harus diganti sebelum login'
+                        ]);
+                        exit;
+                    }
+
                     $updateStmt = $conn->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
                     $updateStmt->bind_param("i", $user['id']);
                     $updateStmt->execute();
-                    
+
                     $_SESSION['user'] = [
                         'id' => $user['id'],
                         'nama' => $user['nama'],
@@ -92,36 +105,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit;
                 }
             } else {
-                // Check if it's a default account using default password
-                $defaultPassword = "guru123";
-                
-                if ($password === $defaultPassword) {
-                    // Create new user with this password
-                    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                    $stmt = $conn->prepare("INSERT INTO users (nama, password, jabatan) VALUES (?, ?, ?)");
-                    $stmt->bind_param("sss", $namaGuru, $hashedPassword, $jabatan);
-                    
-                    if ($stmt->execute()) {
-                        $_SESSION['user'] = [
-                            'id' => $conn->insert_id,
-                            'nama' => $namaGuru,
-                            'jabatan' => $jabatan,
-                            'timestamp' => time()
-                        ];
-                        echo json_encode(['success' => true, 'user' => $_SESSION['user']]);
-                        exit;
-                    } else {
-                        echo json_encode(['success' => false, 'message' => 'Gagal membuat user baru: ' . $conn->error]);
-                        exit;
-                    }
-                } else {
-                    echo json_encode(['success' => false, 'message' => 'Akun tidak ditemukan. Gunakan password default "guru123"']);
-                    exit;
-                }
+                echo json_encode(['success' => false, 'message' => 'Akun tidak ditemukan']);
+                exit;
             }
         }
     }
-    
+
+    // Change password process
+    if ($data['action'] === 'changePassword') {
+        $userId = isset($data['userId']) ? intval($data['userId']) : 0;
+        $currentPassword = $data['currentPassword'] ?? '';
+        $newPassword = $data['newPassword'] ?? '';
+
+        if (!$userId || !$currentPassword || !$newPassword) {
+            echo json_encode(['success' => false, 'message' => 'Data tidak lengkap']);
+            exit;
+        }
+
+        $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows > 0) {
+            $user = $result->fetch_assoc();
+            if (password_verify($currentPassword, $user['password'])) {
+                $hashed = password_hash($newPassword, PASSWORD_DEFAULT);
+                $update = $conn->prepare("UPDATE users SET password = ?, must_change_password = 0 WHERE id = ?");
+                $update->bind_param("si", $hashed, $userId);
+                if ($update->execute()) {
+                    echo json_encode(['success' => true, 'message' => 'Password berhasil diperbarui']);
+                    exit;
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Gagal memperbarui password']);
+                    exit;
+                }
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Password saat ini salah']);
+                exit;
+            }
+        } else {
+            echo json_encode(['success' => false, 'message' => 'User tidak ditemukan']);
+            exit;
+        }
+    }
+
     // Logout process
     if ($data['action'] === 'logout') {
         session_unset();
@@ -129,18 +157,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['success' => true, 'message' => 'Logout berhasil']);
         exit;
     }
-    
+
     // Check session validity
     if ($data['action'] === 'checkSession') {
         if (isset($_SESSION['user'])) {
-            // Using a 2-hour (7200 seconds) session timeout
             if (time() - $_SESSION['user']['timestamp'] < 7200) {
-                // Update timestamp to extend session
                 $_SESSION['user']['timestamp'] = time();
                 echo json_encode(['success' => true, 'user' => $_SESSION['user']]);
                 exit;
             } else {
-                // Session expired
                 session_unset();
                 session_destroy();
                 echo json_encode(['success' => false, 'message' => 'Sesi Anda telah berakhir. Silakan login kembali']);
